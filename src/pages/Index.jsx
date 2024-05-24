@@ -1,32 +1,13 @@
 import { useState } from "react";
 import { Container, VStack, Text, Box, Input, Button, HStack, IconButton } from "@chakra-ui/react";
 import { FaThumbsUp, FaThumbsDown, FaLaugh, FaSadTear } from "react-icons/fa";
-import { createClient } from '@supabase/supabase-js';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_PROJECT_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { usePosts, useAddPost, useAddReaction } from '../utils/dataManagement';
 
 const Index = () => {
   const [newPost, setNewPost] = useState("");
-  const queryClient = useQueryClient();
-
-  const { data: posts, isLoading, isError } = useQuery(['posts'], async () => {
-    const { data, error } = await supabase.from('posts').select('*');
-    if (error) throw new Error(error.message);
-    return data;
-  });
-
-  const addPostMutation = useMutation(async (newPost) => {
-    const { data, error } = await supabase.from('posts').insert([{ title: newPost, body: newPost }]);
-    if (error) throw new Error(error.message);
-    return data;
-  }, {
-    onSuccess: () => {
-      queryClient.invalidateQueries('posts');
-    }
-  });
+  const { data: posts, isLoading, isError } = usePosts();
+  const addPostMutation = useAddPost();
+  const addReactionMutation = useAddReaction();
 
   const addPost = () => {
     if (newPost.trim() !== "") {
@@ -34,16 +15,6 @@ const Index = () => {
       setNewPost("");
     }
   };
-
-  const addReactionMutation = useMutation(async ({ postId, reaction }) => {
-    const { data, error } = await supabase.from('reactions').insert([{ post_id: postId, emoji: reaction }]);
-    if (error) throw new Error(error.message);
-    return data;
-  }, {
-    onSuccess: () => {
-      queryClient.invalidateQueries('posts');
-    }
-  });
 
   const addReaction = (postId, reaction) => {
     addReactionMutation.mutate({ postId, reaction });
